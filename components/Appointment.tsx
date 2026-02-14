@@ -1,11 +1,14 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, CheckCircle, ChevronRight, Briefcase } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, Briefcase, Loader2, AlertCircle } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const Appointment: React.FC = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     service: '',
     date: '',
@@ -28,9 +31,21 @@ const Appointment: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 2000));
-    setLoading(false);
-    setStep(4); // Success step
+    setError(null);
+    
+    try {
+      await addDoc(collection(db, "appointments"), {
+        ...formData,
+        createdAt: serverTimestamp(),
+        status: 'pending'
+      });
+      setStep(4); // Success step
+    } catch (err) {
+      console.error("Error booking appointment: ", err);
+      setError("Failed to book appointment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const containerVariants = {
@@ -96,6 +111,7 @@ const Appointment: React.FC = () => {
                       <input 
                         type="date" 
                         required
+                        value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                         className="w-full bg-[#1f242d] border border-gray-700 p-4 pl-12 rounded-xl text-white focus:border-[#0ef] outline-none"
                       />
@@ -136,10 +152,17 @@ const Appointment: React.FC = () => {
               <motion.div key="step3" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="flex-grow">
                 <h3 className="text-2xl font-bold mb-8 text-center">Your Information</h3>
                 <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
+                  {error && (
+                    <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded-xl flex items-center text-sm">
+                      <AlertCircle className="mr-2" size={16} />
+                      {error}
+                    </div>
+                  )}
                   <input 
                     type="text" 
                     placeholder="Full Name" 
                     required
+                    value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full bg-[#1f242d] border border-gray-700 p-4 rounded-xl text-white focus:border-[#0ef] outline-none"
                   />
@@ -147,6 +170,7 @@ const Appointment: React.FC = () => {
                     type="email" 
                     placeholder="Email Address" 
                     required
+                    value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full bg-[#1f242d] border border-gray-700 p-4 rounded-xl text-white focus:border-[#0ef] outline-none"
                   />
@@ -162,6 +186,7 @@ const Appointment: React.FC = () => {
                       disabled={loading || !formData.name || !formData.email}
                       className="px-10 py-3 bg-[#0ef] text-[#1f242d] font-bold rounded-full shadow-lg hover:shadow-[#0ef]/30 disabled:opacity-50 transition-all flex items-center"
                     >
+                      {loading ? <Loader2 className="animate-spin mr-2" size={20} /> : null}
                       {loading ? 'Processing...' : 'Confirm Booking'}
                     </button>
                   </div>
@@ -175,9 +200,9 @@ const Appointment: React.FC = () => {
                   <CheckCircle size={50} />
                 </div>
                 <h3 className="text-3xl font-bold mb-4">Appointment Confirmed!</h3>
-                <p className="text-gray-400 mb-8 max-w-sm">We've sent a calendar invite to <span className="text-white font-medium">{formData.email}</span>. See you soon!</p>
+                <p className="text-gray-400 mb-8 max-w-sm">We've saved your booking. You'll receive a confirmation email at <span className="text-white font-medium">{formData.email}</span> shortly.</p>
                 <button 
-                  onClick={() => setStep(1)} 
+                  onClick={() => { setStep(1); setFormData({ service: '', date: '', time: '', name: '', email: '' }); }} 
                   className="px-8 py-3 bg-[#1f242d] text-[#0ef] border border-[#0ef] rounded-full font-bold hover:bg-[#0ef] hover:text-[#1f242d] transition-all"
                 >
                   Back to Services

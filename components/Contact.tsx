@@ -1,18 +1,38 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, CheckCircle } from 'lucide-react';
+import { Send, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const Contact: React.FC = () => {
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus('loading');
-    // Simulate API call
-    await new Promise(r => setTimeout(r, 1500));
-    setStatus('success');
-    setTimeout(() => setStatus('idle'), 5000);
+    setErrorMessage(null);
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      fullName: formData.get('fullName'),
+      email: formData.get('email'),
+      subject: formData.get('subject'),
+      phone: formData.get('phone'),
+      message: formData.get('message'),
+      createdAt: serverTimestamp()
+    };
+
+    try {
+      await addDoc(collection(db, "messages"), data);
+      setStatus('success');
+      setTimeout(() => setStatus('idle'), 8000);
+    } catch (err) {
+      console.error("Error sending message: ", err);
+      setStatus('error');
+      setErrorMessage("Something went wrong. Please try again later.");
+    }
   };
 
   return (
@@ -56,15 +76,23 @@ const Contact: React.FC = () => {
             </motion.div>
           ) : (
             <>
+              {status === 'error' && (
+                <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-2xl flex items-center">
+                  <AlertCircle className="mr-3" size={20} />
+                  {errorMessage}
+                </div>
+              )}
               <div className="grid md:grid-cols-2 gap-6">
                 <input 
                   type="text" 
+                  name="fullName"
                   placeholder="Full Name" 
                   required
                   className="w-full bg-[#1f242d] border border-[#0ef]/10 outline-none p-4 rounded-2xl text-white focus:border-[#0ef] focus:ring-1 focus:ring-[#0ef] transition-all"
                 />
                 <input 
                   type="email" 
+                  name="email"
                   placeholder="Email Address" 
                   required
                   className="w-full bg-[#1f242d] border border-[#0ef]/10 outline-none p-4 rounded-2xl text-white focus:border-[#0ef] focus:ring-1 focus:ring-[#0ef] transition-all"
@@ -74,11 +102,13 @@ const Contact: React.FC = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <input 
                   type="text" 
+                  name="subject"
                   placeholder="Subject" 
                   className="w-full bg-[#1f242d] border border-[#0ef]/10 outline-none p-4 rounded-2xl text-white focus:border-[#0ef] focus:ring-1 focus:ring-[#0ef] transition-all"
                 />
                 <input 
                   type="tel" 
+                  name="phone"
                   placeholder="Phone (Optional)" 
                   className="w-full bg-[#1f242d] border border-[#0ef]/10 outline-none p-4 rounded-2xl text-white focus:border-[#0ef] focus:ring-1 focus:ring-[#0ef] transition-all"
                 />
@@ -86,6 +116,7 @@ const Contact: React.FC = () => {
 
               <textarea 
                 rows={6} 
+                name="message"
                 placeholder="How can I help you?" 
                 required
                 className="w-full bg-[#1f242d] border border-[#0ef]/10 outline-none p-5 rounded-2xl text-white focus:border-[#0ef] focus:ring-1 focus:ring-[#0ef] transition-all resize-none"
@@ -98,12 +129,7 @@ const Contact: React.FC = () => {
                   className="group relative px-12 py-4 bg-[#0ef] text-[#1f242d] font-bold rounded-full shadow-lg hover:shadow-[#0ef]/40 transition-all transform hover:scale-105 disabled:opacity-70 disabled:scale-100 flex items-center justify-center space-x-2 mx-auto"
                 >
                   {status === 'loading' ? (
-                    <motion.div 
-                      animate={{ rotate: 360 }}
-                      transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                    >
-                      <Loader2 size={24} />
-                    </motion.div>
+                    <Loader2 className="animate-spin" size={24} />
                   ) : (
                     <>
                       <span>Send Message</span>
@@ -119,9 +145,5 @@ const Contact: React.FC = () => {
     </section>
   );
 };
-
-const Loader2 = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-);
 
 export default Contact;
