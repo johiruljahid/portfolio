@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { motion, useScroll, useSpring } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -12,8 +12,10 @@ import Appointment from './components/Appointment';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 import AIChat from './components/AIChat';
+import AdminPanel from './components/AdminPanel';
 
 const App: React.FC = () => {
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -34,7 +36,7 @@ const App: React.FC = () => {
         style={{ scaleX }}
       />
 
-      <Header />
+      <Header onAdminClick={() => setIsAdminOpen(true)} />
       
       <main>
         <Hero />
@@ -70,6 +72,10 @@ const App: React.FC = () => {
 
       <Footer />
       <AIChat />
+      
+      <AnimatePresence>
+        {isAdminOpen && <AdminPanel isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />}
+      </AnimatePresence>
     </div>
   );
 };

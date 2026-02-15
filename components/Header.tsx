@@ -1,9 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Menu, X, Calendar } from 'lucide-react';
+import { Menu, X, Calendar, Settings } from 'lucide-react';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onAdminClick: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onAdminClick }) => {
   const [activeSection, setActiveSection] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
@@ -91,9 +95,9 @@ const Header: React.FC = () => {
           </motion.a>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-4">
             <ul className="flex items-center space-x-1">
-              {navItems.map((item, idx) => (
+              {navItems.map((item) => (
                 <li key={item.name}>
                   <a 
                     href={`#${item.href}`} 
@@ -115,17 +119,32 @@ const Header: React.FC = () => {
               ))}
             </ul>
             
-            <a 
-              href="#appointment" 
-              onClick={(e) => scrollToSection(e, 'appointment')}
-              className="bg-[#0ef] text-[#1f242d] px-6 py-2 rounded-full font-bold text-sm shadow-lg hover:shadow-[#0ef]/40 transition-all transform hover:scale-105 flex items-center space-x-2"
-            >
-              <Calendar size={16} />
-              <span>Book Now</span>
-            </a>
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={onAdminClick}
+                className="p-2 text-white/5 hover:text-[#0ef]/40 transition-colors rounded-lg"
+                title="Admin"
+              >
+                <Settings size={14} />
+              </button>
+              <a 
+                href="#appointment" 
+                onClick={(e) => scrollToSection(e, 'appointment')}
+                className="bg-[#0ef] text-[#1f242d] px-6 py-2 rounded-full font-bold text-sm shadow-lg hover:shadow-[#0ef]/40 transition-all transform hover:scale-105 flex items-center space-x-2"
+              >
+                <Calendar size={16} />
+                <span>Book Now</span>
+              </a>
+            </div>
           </div>
 
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            <button 
+              onClick={onAdminClick}
+              className="p-2 text-white/5"
+            >
+              <Settings size={14} />
+            </button>
             <button 
               onClick={() => setIsMobileMenuOpen(true)} 
               className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#323946] text-[#0ef] shadow-lg"
